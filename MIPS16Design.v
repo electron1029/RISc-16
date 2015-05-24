@@ -86,6 +86,7 @@ module CPU( clk, rst );
 
         // ---ADD---
 		if (opcode == 3'b000) begin
+		  $display("Instruction = ADD : %b" , instruction[6:0]);
 		end
 
         // ---ADDI---
@@ -100,30 +101,37 @@ module CPU( clk, rst );
 		
 		// ---NAND---
 		if (opcode == 3'b010) begin
+		  $display("Instruction = NAND : %b" , instruction[6:0]);
 		end
 		
 		// ---LUI---
 		if (opcode == 3'b011) begin
+		  $display("Instruction = LUI : %b" , instruction[6:0]);
 		end
 		
 		// ---SW---
 		if (opcode == 3'b100) begin
+		  $display("Instruction = SW : %b" , instruction[6:0]);
 		end
 		
 		// ---LW---
 		if (opcode == 3'b101) begin
+		  $display("Instruction = LW : %b" , instruction[6:0]);
 		end
 		
 		// ---BEQ---
 		if (opcode == 3'b110) begin
+		  $display("Instruction = BEQ : %b" , instruction[6:0]);
 		end
 		
 		// ---JALR---
 		if (opcode == 3'b111) begin
+		  $display("Instruction = JALR : %b" , instruction[6:0]);
 		end
 		// ID END
 
 		// Read Registers
+		reg_address_A = instruction[10:12];
 		reg_address_B = instruction[9:7];
 		reg_address_C = instruction[2:0];
 
@@ -157,6 +165,15 @@ module CPU( clk, rst );
 					alu_zero = (alu_result == 0) ? 1 : 0;
 					$display("Added %d + %d = %d",alu_operand0, alu_operand1, alu_result);
 				end
+			4'b0010: // bitwise NAND
+			     begin
+			     end
+			4'b0011: // PASS 1
+			     begin
+			     end
+			4'b0100: // subtract
+			     begin
+			     end
 			default:
 				begin
 					alu_zero 		= 0;
