@@ -17,7 +17,7 @@ module CPU( clk, rst );
 
     reg [2:0] 	reg_address_B;		// address of register B
 	reg [15:0]	reg_data_B;			// data of register B
-	
+
 	reg [2:0] 	reg_address_C;		// address of register C
 	reg [15:0]	reg_data_C;			// data of register C
 
@@ -36,7 +36,7 @@ module CPU( clk, rst );
 	reg [15:0] alu_result;
 	reg alu_overflow;
 	reg alu_zero;
-	
+
 	// Data
 	reg	[15:0] registers [7:0];
 
@@ -49,14 +49,36 @@ module CPU( clk, rst );
 		$readmemb("p2inst.mips",instruction_memory);
 
 		// Reset Registers
-		$display("\nPrint Registers:");
+	    for(i = 0; i < 8; i = i+1)
+		begin
+	        registers[i] = 0;
+		end
+
+        // reset data mem
+      	for (i = 0; i < 10; i = i + 1)
+        begin
+          data_memory[i] = 0;
+        end
+	end
+
+  // print contents of registers and data mem after every inst
+  always @(negedge clk)
+    begin
+      // print contents of registers
+      $display("\nPrint Registers:");
 	    for(i = 0; i < 8; i = i+1)
 		begin
 	        registers[i] = 0;
 	        $display("R%d = %d",i, registers[i]);
 		end
-	end
-	
+      // print contents of data mem
+      $display("\nPrint DataMem:");
+      	for(i = 0; i < 10; i = i + 1)
+      	begin
+        	$display("D[%d] = %d", i, data_memory[i]);
+      	end
+    end
+
 	always @(posedge clk or posedge rst)
 	begin
 		if (rst) begin
@@ -69,7 +91,7 @@ module CPU( clk, rst );
 		// Instruction Fetch
 		$display("\nPC = %b", pc);
 		instruction = instruction_memory[pc];
-		
+
 		// Print Instruction
 		$display("IF = %b", instruction);
 
@@ -79,7 +101,7 @@ module CPU( clk, rst );
 		cs_alu_select = 0;
 		cs_write_data_memory = 0;
 		cs_read_data_memory = 0;
-		
+
 		// Instruction Decode
 		assign opcode = instruction[15:13]; // Set the opcode
 		$display("Opcode =  %b" , opcode);
@@ -87,6 +109,12 @@ module CPU( clk, rst );
         // ---ADD---
 		if (opcode == 3'b000) begin
 		  $display("Instruction = ADD : %b" , instruction[6:0]);
+          reg_address_A = instruction[12:10];
+          reg_address_B = instruction[9:7];
+		  reg_address_C = instruction[2:0];
+          cs_write_reg = 1;
+		  cs_alu = 4'b0001;
+		  cs_alu_select = 1;
 		end
 
         // ---ADDI---
@@ -98,32 +126,36 @@ module CPU( clk, rst );
 			cs_alu = 4'b0001;
 			cs_alu_select = 1;
 		end
-		
+
 		// ---NAND---
 		if (opcode == 3'b010) begin
 		  $display("Instruction = NAND : %b" , instruction[6:0]);
 		end
-		
+
 		// ---LUI---
 		if (opcode == 3'b011) begin
 		  $display("Instruction = LUI : %b" , instruction[6:0]);
 		end
-		
+
 		// ---SW---
 		if (opcode == 3'b100) begin
 		  $display("Instruction = SW : %b" , instruction[6:0]);
 		end
-		
+
 		// ---LW---
 		if (opcode == 3'b101) begin
 		  $display("Instruction = LW : %b" , instruction[6:0]);
+		  cs_write_reg = 1;
+		  cs_write_data_memory = 0;
+		  cs_alu = 4'b0000;
+		  cs_alu_select = 1;
 		end
-		
+
 		// ---BEQ---
 		if (opcode == 3'b110) begin
 		  $display("Instruction = BEQ : %b" , instruction[6:0]);
 		end
-		
+
 		// ---JALR---
 		if (opcode == 3'b111) begin
 		  $display("Instruction = JALR : %b" , instruction[6:0]);
@@ -131,7 +163,7 @@ module CPU( clk, rst );
 		// ID END
 
 		// Read Registers
-		reg_address_A = instruction[10:12];
+		reg_address_A = instruction[12:10];
 		reg_address_B = instruction[9:7];
 		reg_address_C = instruction[2:0];
 
@@ -154,14 +186,14 @@ module CPU( clk, rst );
 			4'b0001: // Signed add
 				begin
 					alu_result = alu_operand0 + alu_operand1;
-					
+
 					if ((alu_operand0 >= 0 && alu_operand1 >= 0 && alu_result < 0) ||
 						(alu_operand0 < 0 && alu_operand1 < 0 && alu_result >= 0)) begin
 						alu_overflow = 1;
 					end else begin
 						alu_overflow = 0;
 					end
-					
+
 					alu_zero = (alu_result == 0) ? 1 : 0;
 					$display("Added %d + %d = %d",alu_operand0, alu_operand1, alu_result);
 				end
@@ -178,26 +210,22 @@ module CPU( clk, rst );
 				begin
 					alu_zero 		= 0;
 					alu_overflow 	= 0;
-				end				
+				end
 		endcase
 		// ALU END
-				
+
 		// Write Back To Reg
 		if (cs_write_reg == 1) begin
 			registers[reg_address_A] = alu_result;
 			$display("Write R%d = %d",reg_address_A, alu_result);
-			$display("\nPrint Registers:");
-			for(i = 0; i < 8; i = i+1) begin
-		        $display("R%d = %d",i, registers[i]);
-			end
 		end
 
 		//For SW Instruction: Load From Memory Into Reg
 		if (cs_read_data_memory) begin
-			data_memory[data_address] = registers[reg_address_A]; 
+			data_memory[data_address] = registers[reg_address_A];
 		end
 
-		//For LW Instruction:  Store From Reg Into Memory 
+		//For LW Instruction:  Store From Reg Into Memory
 		if(cs_write_data_memory) begin
 			registers[reg_address_A] = data_memory[data_address];
 		end
@@ -210,4 +238,3 @@ module CPU( clk, rst );
 	end
 
 endmodule
-
