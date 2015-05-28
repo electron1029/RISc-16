@@ -5,7 +5,7 @@ module CPU( clk, rst );
 
 	reg [15:0] pc;
 	reg [15:0] instruction;
-    reg	[15:0] instruction_memory [4:0];
+ 	reg	[15:0] instruction_memory [8:0];
 
 	// Data Memory
 	reg [15:0] data_memory [10:0]; // Array[10] of 16bits in each slot
@@ -114,6 +114,8 @@ module CPU( clk, rst );
           reg_data_B = registers[reg_address_B];
 		  reg_data_C = registers[reg_address_C];
           cs_write_reg = 1;
+          cs_write_data_memory = 0;
+          cs_read_data_memory = 0;
 		  cs_alu = 4'b0001;
 		  cs_alu_select = 0;
 		end
@@ -124,6 +126,8 @@ module CPU( clk, rst );
 			// Add Immediate Instruction
 			reg_address_A = instruction[12:10];
 			cs_write_reg = 1;
+          	cs_write_data_memory = 0;
+          	cs_read_data_memory = 0;
 			cs_alu = 4'b0001;
 			cs_alu_select = 1;
 		end
@@ -131,11 +135,27 @@ module CPU( clk, rst );
 		// ---NAND---
 		if (opcode == 3'b010) begin
 		  $display("Instruction = NAND : %b" , instruction[6:0]);
+          reg_address_A = instruction[12:10];
+          reg_address_B = instruction[9:7];
+		  reg_address_C = instruction[2:0];
+          reg_data_B = registers[reg_address_B];
+		  reg_data_C = registers[reg_address_C];
+          cs_write_reg = 1;
+          cs_write_data_memory = 0;
+          cs_read_data_memory = 0;
+          cs_alu = 4'b0010;
+          cs_alu_select = 0;
 		end
 
 		// ---LUI---
 		if (opcode == 3'b011) begin
 		  $display("Instruction = LUI : %b" , instruction[6:0]);
+          reg_address_A = instruction[12:10];
+          cs_write_reg = 1;
+          cs_write_data_memory = 0;
+          cs_read_data_memory = 0;
+          cs_alu = 4'b0011;
+          cs_alu_select = 1;
 		end
 
 		// ---SW---
@@ -146,6 +166,7 @@ module CPU( clk, rst );
           reg_data_B = registers[reg_address_B];
           cs_write_reg = 0;
           cs_write_data_memory = 1;
+          cs_read_data_memory = 0;
           cs_alu = 4'b0001;
           cs_alu_select = 1;
 		end
@@ -174,6 +195,7 @@ module CPU( clk, rst );
 		end
 		// ID END
 
+        // read all values from registers
 		reg_address_A = instruction[12:10];
         reg_address_B = instruction[9:7];
      	reg_address_C = instruction[2:0];
@@ -210,9 +232,14 @@ module CPU( clk, rst );
 				end
 			4'b0010: // bitwise NAND
 			     begin
+                   alu_result = alu_operand0 ~& alu_operand1;
+                   $display("NANDed %b ~& %b = %b", alu_operand0, alu_operand1, alu_result);
 			     end
 			4'b0011: // PASS 1
 			     begin
+                   immediate = instruction[9:0];
+                   alu_result = immediate << 6;
+                   $display("Shifted %b 6 left to get %b", immediate, alu_result);
 			     end
 			4'b0100: // subtract
 			     begin
