@@ -38,7 +38,7 @@ module CPU( clk, rst );
 	reg alu_zero;
 
 	// Data
-	reg	[15:0] registers [7:0];
+	reg [15:0] registers [7:0];
 
 	reg [2:0] opcode;
 	reg [15:0] immediate;
@@ -62,6 +62,7 @@ module CPU( clk, rst );
 	end
 
   // print contents of registers and data mem after every inst
+  // also print control signals
   always @(negedge clk)
     begin
       // print contents of registers
@@ -74,8 +75,20 @@ module CPU( clk, rst );
       $display("\nPrint DataMem:");
       	for(i = 0; i < 10; i = i + 1)
       	begin
-        	$display("D[%d] = %d", i, data_memory[i]);
+          $display("D[%d] = %d", i, data_memory[i]);
       	end
+      // print control signals
+      $display("\nControl Signals:");
+      $display("reg_address_A: %b", reg_address_A);
+      $display("reg_address_B: %b", reg_address_B);
+      $display("reg_address_C: %b", reg_address_C);
+      $display("reg_data_B: %b", reg_data_B);
+      $display("reg_data_C: %b", reg_data_C);
+      $display("cs_write_reg: %b", cs_write_reg);
+      $display("cs_write_data_memory: %b", cs_write_data_memory);
+      $display("cs_read_data_memory: %b", cs_read_data_memory);
+      $display("cs_alu: %b", cs_alu);
+      $display("cs_alu_select: %b", cs_alu_select);
     end
 
 	always @(posedge clk or posedge rst)
